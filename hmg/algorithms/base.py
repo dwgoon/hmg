@@ -2,12 +2,17 @@
 from hmg.engine import GraphEngine
 
 class Base:    
-    def __init__(self, engine):
+    def __init__(self, engine, verbose=1):
         self._engine = engine  # graph engine
+        self._verbose = verbose
        
     @property
     def engine(self):
         return self._engine
+    
+    @property
+    def verbose(self):
+        return self._verbose
         
     def encode(self, g):
         raise NotImplementedError()

@@ -94,8 +94,8 @@ if __name__ == "__main__":
     # arr_ratio_ae = [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
     
     
-    arr_msg_bytes = [2**7] #2 ** np.arange(7, 11)
-    arr_bpe = [1.0] #np.array([1.0, 1.25, 1.5, 1.75, 2.0])
+    arr_msg_bytes = 2 ** np.arange(7, 11)
+    arr_bpe = np.array([1.0, 1.25, 1.5, 1.75, 2.0])
     
     num_trials = 2  
     list_stats = []
@@ -104,24 +104,7 @@ if __name__ == "__main__":
     for n_msg_bytes in arr_msg_bytes:
         t_beg_total = time.perf_counter()
         stats = {}
-        # stats["dataset"] = dataset.replace('_', '-')
-        # write_log(f"[Dataset] {dataset}")
-        # fpath_cover = f"../data/ogb/{dataset}/raw/edge.csv"
-        # fpath_stego = f"../data/ogb/{dataset}/raw/edge_sg.csv"
-    
-        # Read the dataset.
-        # t_beg = time.perf_counter()        
-        # g_cover, df_cover = fileio.read_ogb(fpath_cover, directed=True)        
-        # t_end = time.perf_counter()
-        # stats["duration_read"] = t_end - t_beg
         
-        # write_log("Duration for Reading: %f sec."%(stats["duration_read"]))
-    
-        # Create a random message based on the size of edge list.
-        # max_bits, index_edge = _estimate_max_bits(g_cover, df_cover)        
-        
-        
-        # n_bits_msg = 8 * n_msg_bytes
         msg_bits = generate_bits(n_msg_bytes)
         write_log("Message Size (Bits): %d"%(len(msg_bits)))
         
@@ -129,7 +112,6 @@ if __name__ == "__main__":
             num_success = 0
             
             for j in range(num_trials):
-                # write_log(f"[{stats['dataset']}][ratio_ae={ratio_ae}][trial#{j+1}]")
                 
                 n_edges = int(n_msg_bytes / bpe)
                 n_nodes = n_edges // 2 + 1
@@ -157,7 +139,7 @@ if __name__ == "__main__":
             
             
             # Record statistics.
-            # stats["ratio_ae"] = ratio_ae
+            stats["bpe"] = bpe
             stats["num_trials"] = num_trials
             stats["num_success"] = num_success
             stats["ratio_success"] = num_success / num_trials
@@ -166,5 +148,5 @@ if __name__ == "__main__":
     # end of for
 
     finish_logging()
-    #df_stats = pd.DataFrame(list_stats)
-    #df_stats.to_csv("results_bind_ogb_increasing_payload.csv", index=False)
+    df_stats = pd.DataFrame(list_stats)
+    df_stats.to_csv("results_bind_rand-ba_increasing_payload.csv", index=False)

@@ -21,10 +21,9 @@ from hmg.logging import write_log
 bw2fmt = {1: "B", 2: "H", 4: "I", 8: "Q"}
 
 class BYNIS(Base):    
-    def __init__(self, engine):
-        super().__init__(engine)
-        
-    
+    def __init__(self, engine, *args, **kwargs):
+        super().__init__(engine, *args, **kwargs)
+            
     def estimate_number_of_nodes(self, n_bytes):
         return int(np.ceil(10**np.round(np.log10(n_bytes))))
         
@@ -36,6 +35,8 @@ class BYNIS(Base):
                max_try_rename=20):
         """Encode the message bytes into the node IDs of a synthetic edge.
         """        
+        
+        
         
         stats = {}
         
@@ -83,7 +84,7 @@ class BYNIS(Base):
         num_try_rename = 0
         list_edges_stego = []
         desc = "Encode Message Bytes in Edge List"
-        with tqdm(total=n_bytes, desc=desc) as pbar:
+        with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
             for i, d in enumerate(data_adjusted):
                 if degree_ref[cur_num] <= num_use_degree[cur_num]:
                     cur_num += 1
@@ -115,8 +116,9 @@ class BYNIS(Base):
         cnet_num_edges = g.num_edges() 
          
         fstr_logging_net_nums = "Num. %s in the Synthetic Stego Network: %d"
-        write_log(fstr_logging_net_nums%("Nodes", cnet_num_nodes))
-        write_log(fstr_logging_net_nums%("Edges", cnet_num_edges))
+        if verbose > 0:
+            write_log(fstr_logging_net_nums%("Nodes", cnet_num_nodes))
+            write_log(fstr_logging_net_nums%("Edges", cnet_num_edges))
                        
         
         stats["cnet_num_nodes"] = cnet_num_nodes

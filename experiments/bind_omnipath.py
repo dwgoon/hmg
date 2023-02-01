@@ -18,7 +18,7 @@ if __name__ == "__main__":
     pw = 1  # Password is used for seeding.    
 
     # Create an algorithm object
-    alg = BIND()
+    alg = BIND(ge)
     
     # Create the data structures from the network data
     fileio = ge.create_fileio()

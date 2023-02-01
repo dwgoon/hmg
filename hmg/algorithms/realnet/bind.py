@@ -19,7 +19,8 @@ from hmg.utils import get_bitwidth
 
 class BIND(Base):
 
-    def __init__(self):
+    def __init__(self, engine, *args, **kwargs):
+        super().__init__(engine, *args, **kwargs)
         self.initialize()
 
     def initialize(self):
@@ -54,9 +55,12 @@ class BIND(Base):
 
         return self._estimated_max_bits
 
-    def encode(self, g, df_edges_cover, msg_bits, pw=None):
+    def encode(self, g, df_edges_cover, msg_bits, pw=None, verbose=1):
         """Encode the message bits according to the parity of node degree.
         """
+        
+        disable_tqdm = True if verbose == 0 else False
+        
         stats = {}
         
         len_list_edges = len(df_edges_cover)
@@ -87,7 +91,7 @@ class BIND(Base):
         n_edges_stego = int(n_bits / 2)
         index_edge_stego = np.zeros(n_edges_stego, dtype=np.int64)
         desc = "Encode Message Bits in Edge List"
-        with tqdm(total=n_bits, desc=desc) as pbar:
+        with tqdm(total=n_bits, desc=desc, disable=disable_tqdm) as pbar:
             arr_two_bits = np.array(list(zip(bits[0::2], bits[1::2])),
                                     dtype=np.uint8) 
             

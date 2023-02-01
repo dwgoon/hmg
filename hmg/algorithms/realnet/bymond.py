@@ -22,8 +22,8 @@ from hmg.logging import write_log
 bw2fmt = {1: "B", 2: "H", 4: "I", 8: "Q"}
 
 class BYMOND(Base):
-    def __init__(self):
-        self.initialize()
+    def __init__(self, engine, *args, **kwargs):
+        super().__init__(engine, *args, **kwargs)
 
     def initialize(self):
         self._arr_cnt_deg = np.zeros(256, dtype=np.uint64)
@@ -49,7 +49,9 @@ class BYMOND(Base):
                 min_cnt_deg = index.size
 
         self._estimated_max_bytes = 256 * min_cnt_deg
-        write_log("Estimated Max. Message Bytes: %d"%(self._estimated_max_bytes))
+        if self._self._verbose > 0:
+            write_log("Estimated Max. Message Bytes: %d"%(self._estimated_max_bytes))
+       
         self._is_max_bytes_estimated = True
        
         return self._estimated_max_bytes
@@ -58,21 +60,26 @@ class BYMOND(Base):
     def encode(self, g, df_edges_cover, msg_bytes, pw=None):
         """Encode the message bytes in the node IDs of an edge.
         """       
+        
+        disable_tqdm = True if self._verbose == 0 else False
+        
         stats = {}        
         
         cnet_num_nodes = g.num_nodes()
         cnet_num_edges = g.num_edges() 
                 
-        fstr_logging_net_nums = "Num. %s in the Cover Network: %d"       
-        write_log(fstr_logging_net_nums%("Nodes", cnet_num_nodes))
-        write_log(fstr_logging_net_nums%("Edges", cnet_num_edges))
+        if self._verbose > 0:
+            fstr_logging_net_nums = "Num. %s in the Cover Network: %d"       
+            write_log(fstr_logging_net_nums%("Nodes", cnet_num_nodes))
+            write_log(fstr_logging_net_nums%("Edges", cnet_num_edges))
 
         if not self._is_max_bytes_estimated:
             self.estimate_max_bytes(g, df_edges_cover)
         
         for i in range(256):
              stats["cel_num_edges_%03d"%(i)] = len(self._indices_edge[i])
-             write_log("Num. Edges (%d): %d"%(i, len(self._indices_edge[i])))
+             if self._verbose > 0:
+                 write_log("Num. Edges (%d): %d"%(i, len(self._indices_edge[i])))
         
 
         if pw:
@@ -100,13 +107,13 @@ class BYMOND(Base):
         
         n_bytes = len(data_origin)  # Update the number of bytes   
         n_edges_stego = n_bytes
-        index_edge_stego = np.zeros(n_edges_stego, dtype=np.uint64)
+        ind_edge_stego = np.zeros(n_edges_stego, dtype=np.uint64)
         desc = "Encode Message Bytes in Edge List"
-        with tqdm(total=n_bytes, desc=desc) as pbar:
+        with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
             i_edges = np.zeros(256, dtype=np.uint64)
             i_edge_stego = 0
             for i, d in enumerate(data_origin):                
-                index_edge_stego[i_edge_stego] = self._indices_edge[d][i_edges[d]]    
+                ind_edge_stego[i_edge_stego] = self._indices_edge[d][i_edges[d]]    
                 i_edges[d] += 1
                 i_edge_stego += 1
                 pbar.update(1)
@@ -114,7 +121,7 @@ class BYMOND(Base):
         
         
         # Arrange the sub-dataframes
-        list_sdf = [df_edges_cover.iloc[index_edge_stego, :]]
+        list_sdf = [df_edges_cover.iloc[ind_edge_stego, :]]
         
         for i in range(256):
             #print(df_edges_cover.iloc[self._indices_edge[i][i_edges[i]:], :])
@@ -127,14 +134,14 @@ class BYMOND(Base):
             pw = 1            
             
         np.random.seed(pw)  # Seed using password.
-        index_rand = np.arange(df_out.shape[0])
-        np.random.shuffle(index_rand)
-        df_out = df_out.iloc[index_rand, :].reset_index(drop=True)
+        ind_rand = np.arange(df_out.shape[0])
+        np.random.shuffle(ind_rand)
+        df_out = df_out.iloc[ind_rand, :].reset_index(drop=True)
        
         stats["cnet_num_nodes"] = cnet_num_nodes
         stats["cnet_num_edges"] = cnet_num_edges
         stats["cel_num_edges"] = df_edges_cover.shape[0]
-        stats["cel_num_edges_encoded"] = len(index_edge_stego)
+        stats["cel_num_edges_encoded"] = len(ind_edge_stego)
         stats["estimated_max_msg_size"] = self._estimated_max_bytes
         stats["encoded_msg_size"] = len(msg_bytes)        
         return df_out, stats
@@ -151,11 +158,11 @@ class BYMOND(Base):
             pw = 1
         
         np.random.seed(pw)  # Seed using password.
-        index_rand = np.arange(df_edges_stego.shape[0])
-        np.random.shuffle(index_rand)
-        index_ori = np.zeros_like(index_rand)
-        index_ori[index_rand] = np.arange(df_edges_stego.shape[0])
-        df_edges_stego = df_edges_stego.iloc[index_ori].reset_index(drop=True)
+        ind_rand = np.arange(df_edges_stego.shape[0])
+        np.random.shuffle(ind_rand)
+        ind_ori = np.zeros_like(ind_rand)
+        ind_ori[ind_rand] = np.arange(df_edges_stego.shape[0])
+        df_edges_stego = df_edges_stego.iloc[ind_ori].reset_index(drop=True)
 
         get_degree = lambda x: g.degree(x)
         deg_a = df_edges_stego.iloc[:, 0].apply(get_degree)
