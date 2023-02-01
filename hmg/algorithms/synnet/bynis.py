@@ -12,7 +12,7 @@ from networkx.generators.random_graphs import powerlaw_cluster_graph
 import pandas as pd
 from tqdm import tqdm
 
-from hmg.utils import get_bytewidth
+from hmg.utils import get_bitwidth, get_bytewidth
 from hmg.algorithms.base import Base
 from hmg.logging import write_log
 
@@ -30,22 +30,23 @@ class BYNIS(Base):
     def encode(self,
                msg_bytes,
                pw=None,
+               n_extra_edges=None,
                g_ref=None,
                directed=False,
                max_try_rename=20):
         """Encode the message bytes into the node IDs of a synthetic edge.
         """        
         
-        
+        disable_tqdm = True if self._verbose == 0 else False
         
         stats = {}
         
-        if pw:
+        if not pw:
             pw = 1            
-        np.random.seed(pw)
+        np.random.seed(pw)      
         
         n_bytes = len(msg_bytes)
-        
+
         # Get byte string of n_bytes    
         n_bytewidth = get_bytewidth(n_bytes)
         bs_n_bytewidth = struct.pack("B", n_bytewidth)
@@ -109,14 +110,30 @@ class BYNIS(Base):
                 g.add_edge(*edge)
                 list_edges_stego.append(edge)
                 num_use_degree[cur_num] += 1
-                pbar.update(1)
-         
+                pbar.update(1)         
+            # end of for
+            
+            if n_extra_edges:
+                num_nodes = g.num_nodes()
+                for i in range(n_extra_edges):
+                    edge = np.random.randint(0, num_nodes, size=2)                
+                    
+                    while g.has_edge(*edge):                    
+                        edge = np.random.randint(0, num_nodes, size=2)
+                    # end of while
+                   
+                    g.add_edge(*edge)
+                    list_edges_stego.append(edge)
+                    num_use_degree[cur_num] += 1
+                    pbar.update(1)
+                # end of for
+        # end of with
         
         cnet_num_nodes = g.num_nodes()
         cnet_num_edges = g.num_edges() 
          
         fstr_logging_net_nums = "Num. %s in the Synthetic Stego Network: %d"
-        if verbose > 0:
+        if self._verbose > 0:
             write_log(fstr_logging_net_nums%("Nodes", cnet_num_nodes))
             write_log(fstr_logging_net_nums%("Edges", cnet_num_edges))
                        
@@ -127,8 +144,14 @@ class BYNIS(Base):
         stats["msg_bytes"] = n_bytewidth
         stats["encoded_msg_size"] = len(msg_bytes)        
         stats["num_try_rename"] = num_try_rename
-
-        return pd.DataFrame(list_edges_stego), g, stats
+        
+        df_out = pd.DataFrame(list_edges_stego)
+        np.random.seed(pw)  # Seed using password.
+        index_rand = np.arange(df_out.shape[0])
+        np.random.shuffle(index_rand)
+        df_stego = df_out.iloc[index_rand, :].reset_index(drop=True)
+        
+        return df_stego, g, stats
         
     def decode(self,
                df_edges_stego,
@@ -136,7 +159,21 @@ class BYNIS(Base):
                directed=False):
         """Decode the message bytes from the stego edge list.
         """      
+        
+        disable_tqdm = True if self._verbose == 0 else False
+        
         stats = {}
+        
+        if not pw:
+            pw = 1
+            
+        np.random.seed(pw)  # Seed using password.
+        index_rand = np.arange(df_edges_stego.shape[0])
+        np.random.shuffle(index_rand)
+        index_ori = np.zeros_like(index_rand)
+        index_ori[index_rand] = np.arange(df_edges_stego.shape[0])
+        df_edges_stego = df_edges_stego.iloc[index_ori].reset_index(drop=True)
+        
         n_bytewidth = sum(df_edges_stego.iloc[0, :]) % 256
         arr_n_bytes = np.zeros(n_bytewidth, np.uint8)
         for i in range(0, n_bytewidth):
@@ -145,12 +182,15 @@ class BYNIS(Base):
             
         bs_n_bytes = arr_n_bytes.tobytes()
         n_bytes = struct.unpack(bw2fmt[n_bytewidth], bs_n_bytes)[0]
+            
         data_rec = np.zeros(n_bytes, np.uint8)
         
         g = self.engine.create_graph(directed=directed)
         desc = "Decode Message Bytes"
-        with tqdm(total=n_bytes, desc=desc) as pbar:
-            df_edges_msg = df_edges_stego[1+n_bytewidth:].reset_index(drop=True)
+        with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
+            i_beg = 1+n_bytewidth
+            i_end = i_beg + n_bytes
+            df_edges_msg = df_edges_stego[i_beg:i_end].reset_index(drop=True)
             
             for i, row in df_edges_msg.iterrows():
                 g.add_edge(row[0], row[1])

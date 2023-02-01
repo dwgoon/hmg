@@ -42,3 +42,9 @@ def modinv(a, m):
     else:
         return x % m
     
+
+def swap_rows(df, ind):
+    ind1 = ind[:, 0]
+    ind2 = ind[:, 1]
+    df.iloc[ind1], df.iloc[ind2] =  df.iloc[ind2].copy(), df.iloc[ind1].copy()
+    return df
