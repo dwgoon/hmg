@@ -5,12 +5,13 @@
 
 ## Algorithms
 
-- Real-world Networks
+- Real-world graphs
     - BIND
     - BYMOND
 
-- Synthetic Networks
+- Synthetic graphs
     - BYNIS
+    - WU2019
 
 
 ## Installation
@@ -51,7 +52,7 @@ This repository provides some basic experiments for each algorithm in `experimen
 - BIND: `bind_omnipath.py`
 - BYMOND: `bymond_ddi.py`
 - BYNIS: `bynis_powerlaw.py`
-
+- WU2019: `wu2019_paper_examples.py`
 
 ### 2. Experiments for OGB datasets
 
