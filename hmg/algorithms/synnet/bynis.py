@@ -64,8 +64,8 @@ class BYNIS(Base):
         
         n_bytes = len(data_origin)  # Update num. bytes
         n_nodes = self.estimate_number_of_nodes(n_bytes)
-        n_adjusted = max([int(2**np.ceil(np.log2(n_nodes))), 256])
-        data_adjusted = data_origin.astype(np.uint16) + n_adjusted
+        bias = max([int(2**np.ceil(np.log2(n_nodes))), 256])
+        data_adjusted = data_origin.astype(np.uint16) + bias
         
         if not g_ref:
             n_edges_per_node = int(n_bytes/n_nodes) + 1

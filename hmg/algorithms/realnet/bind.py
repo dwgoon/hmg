@@ -50,7 +50,9 @@ class BIND(Base):
                                             self._index_edge_oe.size,
                                             self._index_edge_oo.size))
 
-        write_log("Estimated Max. Message Bits: %d"%(self._estimated_max_bits))
+        if self._verbose > 0:
+            write_log("Estimated Max. Message Bits: %d"%(self._estimated_max_bits))
+            
         self._is_max_bits_estimated = True
 
         return self._estimated_max_bits
@@ -68,16 +70,18 @@ class BIND(Base):
         cnet_num_nodes = g.num_nodes()
         cnet_num_edges = g.num_edges()     
         
-        write_log("Num. Nodes: %d"%(cnet_num_nodes))
-        write_log("Num. Edges: %d"%(cnet_num_edges))
+        if self._verbose > 0:
+            write_log("Num. Nodes: %d"%(cnet_num_nodes))
+            write_log("Num. Edges: %d"%(cnet_num_edges))
 
         if not self._is_max_bits_estimated:
             self.estimate_max_bits(g, df_edges_cover)
         
-        write_log("Num. Edges (EE): %d"%(len(self._index_edge_ee)))
-        write_log("Num. Edges (EO): %d"%(len(self._index_edge_eo)))
-        write_log("Num. Edges (OE): %d"%(len(self._index_edge_oe)))
-        write_log("Num. Edges (OO): %d"%(len(self._index_edge_oo)))
+        if self._verbose > 0:
+            write_log("Num. Edges (EE): %d"%(len(self._index_edge_ee)))
+            write_log("Num. Edges (EO): %d"%(len(self._index_edge_eo)))
+            write_log("Num. Edges (OE): %d"%(len(self._index_edge_oe)))
+            write_log("Num. Edges (OO): %d"%(len(self._index_edge_oo)))
         
         # Calculate the bit-width considering the number of df_edges_cover
         n_bitwidth = get_bitwidth(len_list_edges)
@@ -113,10 +117,11 @@ class BIND(Base):
             if index_bits_oo.size > self._index_edge_oo.size:
                 raise RuntimeError(err_msg.format(et="OO"))
            
-            write_log("Num. Two Bit Units (EE): %d"%(len(index_bits_ee)))
-            write_log("Num. Two Bit Units (EO): %d"%(len(index_bits_eo)))
-            write_log("Num. Two Bit Units (OE): %d"%(len(index_bits_oe)))
-            write_log("Num. Two Bit Units (OO): %d"%(len(index_bits_oo)))
+            if self._verbose > 0:
+                write_log("Num. Two Bit Units (EE): %d"%(len(index_bits_ee)))
+                write_log("Num. Two Bit Units (EO): %d"%(len(index_bits_eo)))
+                write_log("Num. Two Bit Units (OE): %d"%(len(index_bits_oe)))
+                write_log("Num. Two Bit Units (OO): %d"%(len(index_bits_oo)))
                                         
             index_edge_stego[index_bits_ee] = self._index_edge_ee[:index_bits_ee.size]
             pbar.update(2 * index_bits_ee.size)
