@@ -57,11 +57,11 @@ class BIND(Base):
 
         return self._estimated_max_bits
 
-    def encode(self, g, df_edges_cover, msg_bits, pw=None, verbose=1):
+    def encode(self, g, df_edges_cover, msg_bits, pw=None):
         """Encode the message bits according to the parity of node degree.
         """
         
-        disable_tqdm = True if verbose == 0 else False
+        disable_tqdm = True if self._verbose == 0 else False
         
         stats = {}
         
