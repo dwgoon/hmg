@@ -62,7 +62,7 @@ class NetworkxGraph(Graph):
     
     def add_edge(self, x, y):
         return self._graph.add_edge(x, y)
-    
+
     
 class IgraphGraph(Graph):    
     def __init__(self, g):                

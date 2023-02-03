@@ -161,7 +161,7 @@ class BIND(Base):
         
         stats["cel_num_edges_encoded"] = len(ind_edge_stego)
 
-        stats["encoded_msg_size"] = 8 * len(msg_bits)     
+        stats["encoded_msg_size"] = len(msg_bits) / 8  # in bytes
         return df_out, stats
 
 
