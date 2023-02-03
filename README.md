@@ -11,7 +11,7 @@
 
 - Synthetic graphs
     - BYNIS
-    - WU2019
+    - [WU2019](https://link.springer.com/chapter/10.1007/978-981-15-8101-4_28)
 
 
 ## Installation
