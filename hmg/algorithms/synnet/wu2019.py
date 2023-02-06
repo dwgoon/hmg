@@ -43,10 +43,15 @@ class WU2019(Base):
         super().__init__(engine, *args, **kwargs)
             
     def estimate_num_nodes(self, n_msg_bytes):
-        n_nodes = _estimate_num_nodes(8 * n_msg_bytes)
-        return n_nodes        
-        
-    def encode(self, msg_bits, pw=None, embed=True, op=1, n_extra_edges=None):
+        return int(_estimate_num_nodes(8 * n_msg_bytes))
+                
+    def encode(self,
+               msg_bits,
+               pw=None,
+               embed=True,
+               op=1,
+               n_extra_edges=None,
+               max_node_index=None):
                 
         disable_tqdm = True if self._verbose == 0 else False        
         stats = {}
@@ -99,38 +104,46 @@ class WU2019(Base):
         # Embed the message-graph.
         g_stego = self.engine.create_graph(directed=True)
         
-        # Modified OP 1 in the paper.
-        if op == 1 and n_extra_edges:
-            list_extra_edges = list()
-
-        # Modified OP 2 in the paper.
-        if op == 2 and n_extra_edges:
-            # Split the index of last node (i.e., allow multiple nodes).
-            ind_extra = np.arange(n_nodes + 1, n_nodes + n_extra_edges + 2)
-            np.random.shuffle(ind_extra)
-            i_extra = 0
-        # end of if
+        if n_extra_edges and not isinstance(n_extra_edges, int):
+            raise TypeError("n_extra_edges should be int type.")
         
+        # Modified OP 1 and OP 2 in the paper.
+        if max_node_index:
+            if not isinstance(max_node_index, int):
+                raise TypeError("max_node_index should be int type.")
                 
-        n_progress = n_nodes + n_extra_edges if op == 1 else n_nodes
+            if max_node_index <= n_nodes:
+                raise ValueError("max_node_index should be greater than "\
+                                 "the number of nodes.")
+        else:
+            max_node_index = n_nodes + 1
+                        
+        if n_extra_edges:
+            list_extra_edges = list()
+            if not max_node_index:
+                max_nodes_index = n_nodes + n_extra_edges
+
+        n_progress = n_nodes
+        if n_extra_edges:
+            n_progress += n_extra_edges 
+            
         desc = "Embed the Message Graph"
-        with tqdm(total=n_progress, desc=desc, disable=disable_tqdm) as pbar:
+        with tqdm(total=n_nodes, desc=desc, disable=disable_tqdm) as pbar:
             for i in range(1, n_nodes + 1):
-                less_ind_exists = True  # A less index exists.
+                less_ind_exists = False  # A less index exists.
                 for j in range(1, i + 1):                    
                     if g_msg.has_edge(j, i):
                         g_stego.add_edge(i, j)
                         # print("[DIR] Add (%d, %d)"%(i, j))
-
-                        # print("j=%d i=%d exists"%(j, i))
-                        less_ind_exists = True                        
+                        less_ind_exists = True                   
                 # end of for        
                 
                 
                 if not n_extra_edges:
-                    # OP 1 in the paper.
-                    g_stego.add_edge(i, n_nodes + 1) 
-                    # print("Add i=%d, n+1=%d"%(i, n_nodes + 1))
+                    if not less_ind_exists:
+                        # OP 1 in the paper.
+                        g_stego.add_edge(i, n_nodes + 1) 
+                        # print("[OP1] Add i=%d, n+1=%d"%(i, n_nodes + 1))
                 else:
                     # Modified OP 1 in the paper.
                     if op == 1:
@@ -141,22 +154,29 @@ class WU2019(Base):
                                 list_extra_edges.append((i, j))  # i_src < i_trg
                     
                     # Modified OP 2 in the paper.      
-                    if op == 2 and not less_ind_exists:
-                        if i_extra < n_extra_edges:                                          
-                            g_stego.add_edge(i, ind_extra[i_extra])
-                            i_extra += 1                      
-                # end of if-else                                
-                                
-                if op == 1 and n_extra_edges:
-                    # Randomly insert extra edges according to Modified OP 1.
-                    np.random.shuffle(list_extra_edges)
-                    for i in range(n_extra_edges):
-                        edge = list_extra_edges[i]
-                        g_stego.add_edge(*edge)
-                        pbar.update(1)
-                
-                pbar.update(1)
+                    if op == 2: # and not less_ind_exists:                        
+                        i_trg = np.random.randint(n_nodes + 1,
+                                                  max_node_index + 1)
+                        
+                        list_extra_edges.append((i, i_trg)) 
+                        # print("[MOP2] Add (%d, %d)"%(i, i_trg))         
+                # end of if-else  
+                pbar.update(1)                              
             # end of for
+            
+            if n_extra_edges:
+                # Randomly insert extra edges according to Modified OP 1.
+                np.random.shuffle(list_extra_edges)
+                # print(list_extra_edges)
+                for i in range(n_extra_edges):
+                    if i >= len(list_extra_edges):
+                        break
+                    
+                    edge = list_extra_edges[i]
+                    g_stego.add_edge(*edge)
+                    # print("Add extra edge:", edge)
+                    pbar.update(1)   
+            
         # end of with        
         
         # Record some statistics.
