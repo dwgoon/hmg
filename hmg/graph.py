@@ -20,7 +20,7 @@ class Graph(object):
     def has_node(self, x):
         raise NotImplementedError()
     
-    def has_edge(self, x, y):
+    def has_edge(self, x, y, directed=True):
         raise NotImplementedError()
     
     def add_edge(self, x, y):
@@ -57,8 +57,11 @@ class NetworkxGraph(Graph):
     def has_node(self, x):
         return self._graph.had_node(x)
     
-    def has_edge(self, x, y):
-        return self._graph.has_edge(x, y)
+    def has_edge(self, x, y, directed=True):
+        if directed:
+            return self._graph.has_edge(x, y)
+        else:
+            return self._graph.has_edge(x, y) or self._graph.has_edge(y, x)
     
     def add_edge(self, x, y):
         return self._graph.add_edge(x, y)
@@ -95,10 +98,14 @@ class IgraphGraph(Graph):
         
         return True
             
-    def has_edge(self, x, y):
+    def has_edge(self, x, y, directed=True):
         try:
-            res = self._graph.get_eid(x, y)
-            if res < 0:
+            res_xy = self._graph.get_eid(x, y)
+            if not directed:
+                res_yx = self._graph.get_eid(y, x)
+                if res_xy < 0  and res_yx < 0:
+                    return False
+            elif res_xy < 0:
                 return False
         except Exception:
             return False
