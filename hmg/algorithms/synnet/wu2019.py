@@ -18,7 +18,7 @@ from hmg.logging import write_log
 
 
 @jit('float64(int64)', nopython=True)
-def _estimate_number_of_nodes(n_bits):
+def _estimate_num_nodes(n_bits):
     return (1 + np.sqrt(1 + 8 * n_bits)) / 2
     
 
@@ -42,7 +42,9 @@ class WU2019(Base):
     def __init__(self, engine, *args, **kwargs):
         super().__init__(engine, *args, **kwargs)
             
-
+    def estimate_num_nodes(self, n_msg_bytes):
+        n_nodes = _estimate_num_nodes(8 * n_msg_bytes)
+        return n_nodes        
         
     def encode(self, msg_bits, pw=None, embed=True, op=1, n_extra_edges=None):
                 
@@ -58,7 +60,7 @@ class WU2019(Base):
 
         msg_bits = np.array(msg_bits, dtype=np.int8)
         n_bits = len(msg_bits)
-        n_nodes = _estimate_number_of_nodes(n_bits)
+        n_nodes = _estimate_num_nodes(n_bits)
         n_nodes = int(np.ceil(n_nodes))
         
         # Generate the message-graph.
@@ -178,7 +180,7 @@ class WU2019(Base):
         stats = {}
 
         ind_msg = np.arange(1, n_bits + 1)
-        n_nodes = _estimate_number_of_nodes(n_bits)
+        n_nodes = _estimate_num_nodes(n_bits)
         n_nodes = int(np.ceil(n_nodes))
 
         msg_bits = np.zeros(n_bits, dtype=np.int8)

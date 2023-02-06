@@ -24,7 +24,7 @@ class BYNIS(Base):
     def __init__(self, engine, *args, **kwargs):
         super().__init__(engine, *args, **kwargs)
             
-    def estimate_number_of_nodes(self, n_bytes):
+    def estimate_num_nodes(self, n_bytes):
         return int(np.ceil(10**np.round(np.log10(n_bytes))))
         
     def encode(self,
@@ -63,7 +63,7 @@ class BYNIS(Base):
                                           msg_bytes])
         
         n_bytes = len(data_origin)  # Update num. bytes
-        n_nodes = self.estimate_number_of_nodes(n_bytes)
+        n_nodes = self.estimate_num_nodes(n_bytes)
         bias = max([int(2**np.ceil(np.log2(n_nodes))), 256])
         data_adjusted = data_origin.astype(np.uint16) + bias
         
