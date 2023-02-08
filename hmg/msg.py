@@ -29,3 +29,9 @@ def generate_bytes(n_bytes):
                              dtype='uint8')
     
 
+def to_bitarr(arr):
+    if not isinstance(arr, np.ndarray):
+        raise TypeError("arr should be numpy.ndarray.")
+        
+    return bitstring.BitArray(arr)    
+    

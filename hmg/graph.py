@@ -4,6 +4,9 @@ import importlib
 class Graph(object):    
     def __init__(self, g):
         self._graph = g
+        
+    def copy(self):
+        raise NotImplementedError()
     
     def degree(self, x):
         raise NotImplementedError()
@@ -35,7 +38,10 @@ class NetworkxGraph(Graph):
     def __init__(self, g):                
         super().__init__(g)
         self.nx = importlib.import_module("networkx")    
-    
+            
+    def copy(self):
+        return self.__class__(self._graph.copy())
+        
     def __eq__(self, g):
         return self.nx.is_isomorphic(self._graph, g._graph)
     
@@ -65,12 +71,25 @@ class NetworkxGraph(Graph):
     
     def add_edge(self, x, y):
         return self._graph.add_edge(x, y)
+    
+    def del_edge(self, x, y):
+        return self._graph.remove_edge(x, y)
+    
+    def add_node(self, x):
+        return self._graph.add_node(x)
 
+    def del_node(self, x):
+        return self._graph.remove_node(x)
+       
+    
     
 class IgraphGraph(Graph):    
     def __init__(self, g):                
         super().__init__(g)
         self.igraph = importlib.import_module("igraph")    
+
+    def copy(self):
+        return self.__class__(self._graph.copy())
         
     def __eq__(self, g):
         return self._graph.isomorphic(g._graph)
@@ -125,4 +144,14 @@ class IgraphGraph(Graph):
             self._graph.add_vertex(y)     
             ix_y = self._graph.vs.find(name=y).index                            
 
-        self._graph.add_edge(ix_x, ix_y)
+        return self._graph.add_edge(ix_x, ix_y)
+    
+    def del_edge(self, x, y):
+        eid = self._graph.get_eid(x, y)
+        return self._graph.delete_edges(eid)
+        
+    def add_node(self, x):
+        return self._graph.add_vertex(x)
+        
+    def del_node(self, x):        
+        return self._graph.delete_vertices(x)
