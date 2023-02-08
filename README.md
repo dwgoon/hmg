@@ -10,8 +10,10 @@
     - BYMOND
 
 - Synthetic graphs
+    - [WU2019](https://library.imaging.org/ei/articles/31/5/art00013)
+    - [WU2020](https://link.springer.com/chapter/10.1007/978-981-15-8101-4_28)
     - BYNIS
-    - [WU2019](https://link.springer.com/chapter/10.1007/978-981-15-8101-4_28)
+    
 
 
 ## Installation
