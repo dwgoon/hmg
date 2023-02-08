@@ -1,19 +1,20 @@
+"""
+WU2020
+- This is an implementation of Wu et al. (2020).
+- Wu et al.
+  "Securing Graph Steganography over Social Networks via Interaction Remapping"
+  ICAIS 2020, Proceedings, Part III 6 (pp. 303-312), Springer, Singapore
+  (https://link.springer.com/chapter/10.1007/978-981-15-8101-4_28)
+"""
+
 from collections import defaultdict
 
 import numpy as np
-import pandas as pd
 import bitstring
 
-from hmg.algorithms.synnet import WU2019
-from hmg.engine import GraphEngine
-from hmg.msg import generate_bits
-from hmg.msg import to_bitarr
-        
-
 import numpy as np
-from numba import jit, njit
+import pandas as pd
 from tqdm import tqdm
-
 
 from hmg.algorithms.base import Base
 from hmg.logging import write_log
@@ -107,8 +108,10 @@ class WU2020(Base):
             cnt = uval_cnts[dval]
             if cnt == 0:
                 ind_node = np.random.randint(1, n_nodes + 1)
-                edge = (ind_node, 0)
+                edge = (ind_node, 0)  # New edge
                 # edge = (dval, 0)  # [OPTIONAL] Remove the randomness.
+                g_stego.add_edge(*edge)                
+
                 max_edge_index += 1
                 arr_edges_stego[i, 0] = max_edge_index
                 arr_edges_stego[i, 1:] = edge
@@ -117,7 +120,9 @@ class WU2020(Base):
                 arr_edges_stego[i, :] = df_ref.iloc[j]
                 
             elif cnt >= 2:
-                edge = (cnt, n_nodes + 1)
+                edge = (cnt, n_nodes + 1)  # New edge
+                g_stego.add_edge(*edge)
+                
                 max_edge_index += 1
                 arr_edges_stego[i, 0] = max_edge_index
                 arr_edges_stego[i, 1:] = edge            
@@ -152,8 +157,7 @@ class WU2020(Base):
         # Data extraction: G operations in the paper.
                    
         # Find the max value of node index.
-        max_node_index = df_stego.iloc[:, 1:].max().max()
-        
+        max_node_index = df_stego.iloc[:, 1:].max().max()        
                 
         if not g_stego:            
             g_stego = self.engine.create_graph(directed=False)
@@ -174,13 +178,8 @@ class WU2020(Base):
         r = pw % (n_nodes + 1) # The random seed
         np.random.seed(r)
         
-        # bgs = int(np.log2(n_edges))  # the size of each bit-group    
-        # n_bg = int(len(msg_bits) / bgs)  # the number of bit-groups
-        # arr_edges_ref = np.zeros((n_edges + 1, 2), dtype=np.uint64)
         dvals_rec = np.zeros(n_edges + 1, dtype=np.uint64)  # Decimal values (D)
-       
-        # for i in range(0, n_edges + 1)
-        #   i = 0
+
         j = 0
         for i in range(0, n_edges + 1):    
             ind_edge, *edge = df_stego.iloc[j, :]

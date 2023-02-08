@@ -2,11 +2,9 @@
 This is a reproduction of the examples in the following paper:
 
   Wu et al.
-  "Securing graph steganography over social networks 
-   via interaction remapping."
-  ICAIS 2020, pp. 303–312, Springer
-  (https://link.springer.com/chapter/10.1007/978-981-15-8101-4_28)
-  
+  "New graph-theoretic approach to social steganography."
+  Electronic Imaging, 2019.5 (2019): 539-1.
+  (https://library.imaging.org/ei/articles/31/5/art00013)
 """        
 
 import numpy as np
