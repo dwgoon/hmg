@@ -26,6 +26,27 @@ class WU2020(Base):
             
     # def estimate_num_nodes(self, n_msg_bytes):
     #     return int(_estimate_num_nodes(8 * n_msg_bytes))
+    
+    
+    def estimate_num_edges(self, msg_bits):
+        n_edges_ref = None
+        n_bits = len(msg_bits)        
+        
+        # l = m * log2(m) -> l = 2^i * i where m = 2^i.
+        max_i = int(np.log2(n_bits) + 1)
+        for i in range(2, max_i):
+            m = 2**i  # num. edges
+            n_bits_est = i * m
+            if n_bits_est >= n_bits:
+                n_edges_ref = m
+                # Zero padding
+                n_pad = n_bits_est - n_bits
+                msg_bits += bitstring.BitArray(np.zeros(n_pad, dtype=np.int8))
+                break
+            # end of if
+        # end of for
+        
+        return n_edges_ref, msg_bits
                 
     def encode(self,
                msg_bits,
@@ -34,10 +55,11 @@ class WU2020(Base):
                 
         disable_tqdm = True if self._verbose == 0 else False        
         stats = {}
-        
+    
+        df_ref = df_ref[["Index", "Source", "Target"]]
+
         if not pw:
             pw = 1            
-        np.random.seed(pw)      
     
         if df_ref is None:
             pass  # Create random graphs
@@ -49,6 +71,7 @@ class WU2020(Base):
                 g_ref.add_edge(x, y)
             # end of for     
         
+
         g_stego = g_ref.copy()
         
         n_nodes = g_ref.num_nodes()
@@ -75,7 +98,7 @@ class WU2020(Base):
         
         n_edges_stego = 0
         for i in range(n_bg):        
-            bg = msg_bits[bgs*i:bgs*(i+1)]  # bit-group        
+            bg = msg_bits[bgs*i:bgs*(i+1)]  # bit-group  
             dval = bg.uint
             dvals[i] = dval
             # print(bg, "->", dval)
@@ -85,7 +108,8 @@ class WU2020(Base):
             uval_edges[dval].append(i)
             
         # end of for
-                
+        # print("[ENCODE]", dvals)        
+        
         n_edges_stego = int(n_edges + 1 + np.sum(uval_cnts[uval_cnts >= 2]))
                                     
         r = pw % (n_nodes + 1) # The random seed
@@ -139,16 +163,15 @@ class WU2020(Base):
             i += 1
         # end of for
         
-        # g_stego = engine.create_graph(directed=False)  # Stego graph
-        # for _, x, y in arr_edges_stego:
-        #     g_stego.add_edge(x, y)
-        
         df_stego = pd.DataFrame(arr_edges_stego,
                                 columns=["Index", "Source", "Target"])
         
-        return df_stego, g_stego
+        return df_stego, g_stego, stats
         
     def decode(self, df_stego, pw=None, g_stego=None): 
+        
+        if not pw:
+            pw = 1            
         
         disable_tqdm = True if self._verbose == 0 else False
         stats = {}
@@ -157,20 +180,24 @@ class WU2020(Base):
         # Data extraction: G operations in the paper.
                    
         # Find the max value of node index.
+        df_stego = df_stego[["Index", "Source", "Target"]]
         max_node_index = df_stego.iloc[:, 1:].max().max()        
                 
         if not g_stego:            
-            g_stego = self.engine.create_graph(directed=False)
+            g_ref = self.engine.create_graph(directed=False)
             for i in range(df_stego.shape[0]):
                 x = df_stego.loc[i, "Source"]
                 y = df_stego.loc[i, "Target"]
-                g_stego.add_edge(x, y)
-            # end of for     
-        # end of if
-           
-        g_ref = g_stego.copy()        
-        g_ref.del_node(0)
-        g_ref.del_node(max_node_index)
+                
+                if 0 in (x, y) or max_node_index in (x, y):                    
+                    continue
+                
+                g_ref.add_edge(x, y)
+            # end of for                 
+        else:
+            g_ref = g_stego.copy()        
+            g_ref.del_node(0)
+            g_ref.del_node(max_node_index)
         
         n_nodes = g_ref.num_nodes()
         n_edges = g_ref.num_edges()
@@ -205,11 +232,13 @@ class WU2020(Base):
        
        
         dvals_rec = dvals_rec[1:]
+        # print("[DECODE]", dvals_rec)  
         
         bgs = int(np.log2(n_edges))  # the size of each bit-group    
         msg_bits = np.zeros(bgs* n_edges, dtype=np.int8)  # m * log2(m)
         
         groups = [bitstring.pack('uint%d'%(bgs), dval) for dval in dvals_rec]
+        
         msg_bits = sum(groups)
  
         return msg_bits, stats
