@@ -5,9 +5,12 @@ BYNIS
 - To mimic real-world networks, it uses a reference degree distribution.
 """
 
+import random
 import struct
-
+import collections
+ 
 import numpy as np
+import networkx as nx
 from networkx.generators.random_graphs import powerlaw_cluster_graph
 import pandas as pd
 from tqdm import tqdm
@@ -31,6 +34,7 @@ class BYNIS(Base):
                msg_bytes,
                pw=None,
                n_extra_edges=None,
+               policy=None,
                g_ref=None,
                directed=False,
                max_try_rename=20):
@@ -67,6 +71,10 @@ class BYNIS(Base):
         bias = max([int(2**np.ceil(np.log2(n_nodes))), 256])
         data_adjusted = data_origin.astype(np.uint16) + bias
         
+        # if g_ref:
+        #     if not isinstance(g_ref, nx.Graph):
+        #         raise TypeError("g_ref should be nx.Graph object.")
+        # else:
         if not g_ref:
             n_edges_per_node = int(n_bytes/n_nodes) + 1
             p_add_tri = 0.1
@@ -84,6 +92,11 @@ class BYNIS(Base):
         cur_num = 0
         num_try_rename = 0
         list_edges_stego = []
+        node_ids = set()
+        node_ids_minor = set()
+        node_ids_major = set()
+
+
         desc = "Encode Message Bytes in Edge List"
         with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
             for i, d in enumerate(data_adjusted):
@@ -105,26 +118,90 @@ class BYNIS(Base):
                     j += 1                    
                     if j > max_try_rename:
                         raise RuntimeError("Failed to create target node...")
+                        
+                    
                 # end of while
                 
+                # if j > 1:
+                #     node_ids.add(node_b)
+                
                 g.add_edge(*edge)
+                node_ids_major.add(node_a)
+                node_ids_minor.add(node_b)
+                node_ids.add(edge[0])
+                node_ids.add(edge[1])
                 list_edges_stego.append(edge)
                 num_use_degree[cur_num] += 1
                 pbar.update(1)         
             # end of for
             
+            list_edges_ref = list(g_ref.edges)
+            max_node_id = max(node_ids)
             if n_extra_edges:
-                num_nodes = g.num_nodes()
-                for i in range(n_extra_edges):
-                    edge = np.random.randint(0, num_nodes, size=2)                
+                
+                if policy is None:
+                    policy = (1,)
+                elif isinstance(policy, int):
+                    policy = (policy,)
+                elif not isinstance(policy, collections.abc.Sequence):
+                    raise TypeError("policy should be int or sequence type.")
                     
-                    while g.has_edge(*edge):                    
-                        edge = np.random.randint(0, num_nodes, size=2)
+                
+                for i in policy:
+                    if i < 1 or i > 6:
+                        raise ValueError("policy number should be within [0, 6].")
+                    
+                
+                n_nodes = g.num_nodes()
+                for i in range(n_extra_edges):     
+                    
+                    while True:           
+                        if 1 in policy:
+                            if cur_num < num_use_degree.size:
+                                node_a = cur_num
+                                node_b = random.sample(node_ids, 1)[0]
+                                edge = (node_a, node_b)                        
+                                if not g.has_edge(*edge):
+                                    num_use_degree[cur_num] += 1
+                                    if degree_ref[cur_num] <= num_use_degree[cur_num]:
+                                        cur_num += 1
+                                    break
+                            
+                        if 2 in policy:
+                            edge = random.sample(list_edges_ref, 1)[0]
+                            if not g.has_edge(*edge):
+                                break
+                 
+                        if 3 in policy:
+                            node_a = random.sample(node_ids, 1)[0]
+                            node_b = random.sample(node_ids, 1)[0]
+                            edge = (node_a, node_b)
+                            if not g.has_edge(*edge):
+                                break
+                            
+                        if 4 in policy:
+                            node_a = random.sample(node_ids, 1)[0]
+                            node_b = random.sample(node_ids_major, 1)[0]
+                            edge = (node_a, node_b)
+                            if not g.has_edge(*edge):
+                                break
+                            
+                        if 5 in policy:
+                            node_a = random.sample(node_ids, 1)[0]
+                            node_b = random.sample(node_ids_minor, 1)[0]
+                            edge = (node_a, node_b)
+                            if not g.has_edge(*edge):
+                                break                        
+                        
+                        if 6 in policy:
+                            node_a, node_b = np.random.randint(0, n_nodes + 1, 2)                        
+                            edge = (node_a, node_b)
+                            if not g.has_edge(*edge):
+                                break                        
                     # end of while
                    
                     g.add_edge(*edge)
                     list_edges_stego.append(edge)
-                    num_use_degree[cur_num] += 1
                     pbar.update(1)
                 # end of for
         # end of with
