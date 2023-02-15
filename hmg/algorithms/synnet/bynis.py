@@ -37,7 +37,7 @@ class BYNIS(Base):
                policy=None,
                g_ref=None,
                directed=False,
-               max_try_rename=20):
+               max_try_rename=100):
         """Encode the message bytes into the node IDs of a synthetic edge.
         """        
         
@@ -148,62 +148,75 @@ class BYNIS(Base):
                     
                 
                 for i in policy:
-                    if i < 1 or i > 6:
+                    if i < 0 or i > 6:
                         raise ValueError("policy number should be within [0, 6].")
                     
-                
                 n_nodes = g.num_nodes()
-                for i in range(n_extra_edges):     
-                    
-                    while True:           
-                        if 1 in policy:
-                            if cur_num < num_use_degree.size:
-                                node_a = cur_num
-                                node_b = random.sample(node_ids, 1)[0]
-                                edge = (node_a, node_b)                        
-                                if not g.has_edge(*edge):
-                                    num_use_degree[cur_num] += 1
-                                    if degree_ref[cur_num] <= num_use_degree[cur_num]:
-                                        cur_num += 1
-                                    break
-                            
-                        if 2 in policy:
-                            edge = random.sample(list_edges_ref, 1)[0]
-                            if not g.has_edge(*edge):
-                                break
-                 
-                        if 3 in policy:
-                            node_a = random.sample(node_ids, 1)[0]
-                            node_b = random.sample(node_ids, 1)[0]
-                            edge = (node_a, node_b)
-                            if not g.has_edge(*edge):
-                                break
-                            
-                        if 4 in policy:
-                            node_a = random.sample(node_ids, 1)[0]
-                            node_b = random.sample(node_ids_major, 1)[0]
-                            edge = (node_a, node_b)
-                            if not g.has_edge(*edge):
-                                break
-                            
-                        if 5 in policy:
-                            node_a = random.sample(node_ids, 1)[0]
-                            node_b = random.sample(node_ids_minor, 1)[0]
-                            edge = (node_a, node_b)
-                            if not g.has_edge(*edge):
-                                break                        
+                if 0 in policy:
+                    for i in range(n_extra_edges):
+                        edge = np.random.randint(0, n_nodes, size=2)                
                         
-                        if 6 in policy:
-                            node_a, node_b = np.random.randint(0, n_nodes + 1, 2)                        
-                            edge = (node_a, node_b)
-                            if not g.has_edge(*edge):
-                                break                        
-                    # end of while
-                   
-                    g.add_edge(*edge)
-                    list_edges_stego.append(edge)
-                    pbar.update(1)
-                # end of for
+                        while g.has_edge(*edge):                    
+                            edge = np.random.randint(0, n_nodes, size=2)
+                        # end of while
+                       
+                        g.add_edge(*edge)
+                        list_edges_stego.append(edge)
+                        pbar.update(1)
+                    # end of for                    
+                else:
+                    for i in range(n_extra_edges):     
+                        
+                        while True:           
+                            if 1 in policy:
+                                if cur_num < num_use_degree.size:
+                                    node_a = cur_num
+                                    node_b = random.sample(node_ids, 1)[0]
+                                    edge = (node_a, node_b)                        
+                                    if not g.has_edge(*edge):
+                                        num_use_degree[cur_num] += 1
+                                        if degree_ref[cur_num] <= num_use_degree[cur_num]:
+                                            cur_num += 1
+                                        break
+                                
+                            if 2 in policy:
+                                edge = random.sample(list_edges_ref, 1)[0]
+                                if not g.has_edge(*edge):
+                                    break
+                     
+                            if 3 in policy:
+                                node_a = random.sample(node_ids, 1)[0]
+                                node_b = random.sample(node_ids, 1)[0]
+                                edge = (node_a, node_b)
+                                if not g.has_edge(*edge):
+                                    break
+                                
+                            if 4 in policy:
+                                node_a = random.sample(node_ids, 1)[0]
+                                node_b = random.sample(node_ids_major, 1)[0]
+                                edge = (node_a, node_b)
+                                if not g.has_edge(*edge):
+                                    break
+                                
+                            if 5 in policy:
+                                node_a = random.sample(node_ids, 1)[0]
+                                node_b = random.sample(node_ids_minor, 1)[0]
+                                edge = (node_a, node_b)
+                                if not g.has_edge(*edge):
+                                    break                        
+                            
+                            if 6 in policy:
+                                node_a, node_b = np.random.randint(0, n_nodes + 1, 2)                        
+                                edge = (node_a, node_b)
+                                if not g.has_edge(*edge):
+                                    break                        
+                        # end of while
+                       
+                        g.add_edge(*edge)
+                        list_edges_stego.append(edge)
+                        pbar.update(1)
+                    # end of for
+                # end of if-else
         # end of with
         
         cnet_num_nodes = g.num_nodes()
