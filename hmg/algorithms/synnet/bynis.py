@@ -140,7 +140,7 @@ class BYNIS(Base):
             if n_extra_edges:
                 
                 if policy is None:
-                    policy = (1,)
+                    policy = (0,)
                 elif isinstance(policy, int):
                     policy = (policy,)
                 elif not isinstance(policy, collections.abc.Sequence):
@@ -178,6 +178,8 @@ class BYNIS(Base):
                                         if degree_ref[cur_num] <= num_use_degree[cur_num]:
                                             cur_num += 1
                                         break
+                                    # end of if
+                                # end of if
                                 
                             if 2 in policy:
                                 edge = random.sample(list_edges_ref, 1)[0]
