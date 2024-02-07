@@ -55,6 +55,7 @@ This repository provides some basic experiments for each algorithm in `experimen
 - BYMOND: `bymond_ddi.py`
 - BYNIS: `bynis_powerlaw.py`
 - WU2019: `wu2019_paper_examples.py`
+- WU2020: `wu2020_paper_examples.py`
 
 ### 2. Experiments for OGB datasets
 
