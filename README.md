@@ -1,6 +1,6 @@
 # Hiding Secret Messages in Graph Datasets (HMG)
 
-**HMG**(**H**iding Secret **M**essages in **G**raph Datasets) is a Python package that presents a collection of steganographic algorithms for graph datasets.
+**HMG**(**H**iding Secret **M**essages in **G**raph Datasets) is a Python package that presents a collection of steganography and watermarking algorithms for graph datasets.
 
 
 ## Algorithms
