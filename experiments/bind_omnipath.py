@@ -15,7 +15,7 @@ if __name__ == "__main__":
     
     fpath_cover = "../data/test/omnipath/omnipath.sif"
     fpath_stego = "../data/test/omnipath/omnipath_sg.sif"
-    pw = 1  # Password is used for seeding.    
+    pw = 1234  # Password is used for seeding.    
 
     # Create an algorithm object
     alg = BIND(ge)
@@ -64,6 +64,10 @@ if __name__ == "__main__":
 
     stats.update(stats_encode)
     stats.update(stats_decode)
+    
+    
+    # Get the stego edges.
+    df_stego_edges = alg.get_stego_edges(g_stego, df_stego, pw)
 
     finish_logging()
     

@@ -58,8 +58,7 @@ def _encode(g, df_edges_cover, msg_bits, index_edge):
     
     msg_len_bits = bitstring.pack("uint:%d"%(n_bitwidth), n_bytes_msg)
     bits = msg_len_bits + msg_bits
-    arr_two_bits = np.array(list(zip(bits[0::2], bits[1::2])),
-                            dtype=np.uint8) 
+    arr_two_bits = np.array(bits, dtype=np.uint8).reshape(-1, 2)
     
     err_msg = "The number of {et}-type edges is not enough "\
               "to encode {et}-type bytes."
