@@ -188,15 +188,16 @@ class BIND(Base):
         n_bitwidth = get_bitwidth(n_edges)
         i_end_bitwidth = n_bitwidth // 2
 
+
+        # Get only the number of message bytes.
         get_bits = lambda x: "%d%d"%(g.degree(x[0])%2, g.degree(x[1])%2)
         two_bits = df_edges_stego.iloc[:i_end_bitwidth].apply(get_bits, axis=1)
-
-        
         str_bits = ''.join(two_bits)
         n_bytes_msg = bitstring.BitArray(bin=str_bits).uint
-        n_bits_msg = 8 * n_bytes_msg
         
-        i_end_msg = i_end_bitwidth + n_bits_msg // 2
+        # A single edge encodes two bits, thus n_bits_msg is divided by two.
+        n_bits_msg = 8 * n_bytes_msg        
+        i_end_msg = i_end_bitwidth + (n_bits_msg // 2)  
         
         return df_edges_stego.iloc[:i_end_msg, :]
 
