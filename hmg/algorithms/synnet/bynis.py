@@ -97,7 +97,7 @@ class BYNIS(Base):
         node_ids_major = set()
 
 
-        desc = "Encode Message Bytes in Edge List"
+        desc = "Encode message bytes in edge list"
         with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
             for i, d in enumerate(data_adjusted):
                 if degree_ref[cur_num] <= num_use_degree[cur_num]:

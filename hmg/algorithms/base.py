@@ -2,7 +2,11 @@
 from hmg.engine import GraphEngine
 
 class Base:    
-    def __init__(self, engine, verbose=1):
+    def __init__(self, engine=None, verbose=1):
+
+        if engine is None:
+            raise ValueError("GraphEngine is required to create an algorithm object.")
+
         self._engine = engine  # graph engine
         self._verbose = verbose
        

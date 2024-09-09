@@ -108,7 +108,7 @@ class BYMOND(Base):
         n_bytes = len(data_origin)  # Update the number of bytes   
         n_edges_stego = n_bytes
         ind_edge_stego = np.zeros(n_edges_stego, dtype=np.uint64)
-        desc = "Encode Message Bytes in Edge List"
+        desc = "Encode message bytes in edge list"
         with tqdm(total=n_bytes, desc=desc, disable=disable_tqdm) as pbar:
             i_edges = np.zeros(256, dtype=np.uint64)
             i_edge_stego = 0

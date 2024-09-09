@@ -7,6 +7,9 @@ class Graph(object):
         
     def copy(self):
         raise NotImplementedError()
+        
+    def to_directed(self):
+        raise NotImplementedError()
     
     def degree(self, x):
         raise NotImplementedError()
@@ -41,6 +44,9 @@ class NetworkxGraph(Graph):
             
     def copy(self):
         return self.__class__(self._graph.copy())
+    
+    def to_directed(self):
+        return self.__class__(self._graph.to_directed())
         
     def __eq__(self, g):
         return self.nx.is_isomorphic(self._graph, g._graph)
@@ -69,8 +75,8 @@ class NetworkxGraph(Graph):
         else:
             return self._graph.has_edge(x, y) or self._graph.has_edge(y, x)
     
-    def add_edge(self, x, y):
-        return self._graph.add_edge(x, y)
+    def add_edge(self, x, y, *args, **kwargs):
+        return self._graph.add_edge(x, y, *args, **kwargs)
     
     def del_edge(self, x, y):
         return self._graph.remove_edge(x, y)
@@ -90,6 +96,9 @@ class IgraphGraph(Graph):
 
     def copy(self):
         return self.__class__(self._graph.copy())
+    
+    def to_directed(self):
+        return self.__class__(self._graph.as_directed())    
         
     def __eq__(self, g):
         return self._graph.isomorphic(g._graph)
@@ -131,7 +140,7 @@ class IgraphGraph(Graph):
         
         return True
                 
-    def add_edge(self, x, y):        
+    def add_edge(self, x, y, *args, **kwargs):        
         try:
             ix_x = self._graph.vs.find(name=x).index                           
         except Exception:
@@ -144,7 +153,7 @@ class IgraphGraph(Graph):
             self._graph.add_vertex(y)     
             ix_y = self._graph.vs.find(name=y).index                            
 
-        return self._graph.add_edge(ix_x, ix_y)
+        return self._graph.add_edge(ix_x, ix_y, *args, **kwargs)
     
     def del_edge(self, x, y):
         eid = self._graph.get_eid(x, y)

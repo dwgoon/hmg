@@ -69,7 +69,7 @@ class WU2019(Base):
         n_nodes = int(np.ceil(n_nodes))
         
         # Generate the message-graph.
-        desc = "Generate a Message Graph"
+        desc = "Generate a message graph"
         with tqdm(total=n_bits, desc=desc, disable=disable_tqdm) as pbar:
 
             for z, bit in enumerate(msg_bits, 1):
@@ -127,7 +127,7 @@ class WU2019(Base):
         if n_extra_edges:
             n_progress += n_extra_edges 
             
-        desc = "Embed the Message Graph"
+        desc = "Embed the message graph"
         with tqdm(total=n_nodes, desc=desc, disable=disable_tqdm) as pbar:
             for i in range(1, n_nodes + 1):
                 less_ind_exists = False  # A less index exists.
@@ -205,7 +205,7 @@ class WU2019(Base):
 
         msg_bits = np.zeros(n_bits, dtype=np.int8)
 
-        desc = "Decode Message Bits"
+        desc = "Decode message bits"
         with tqdm(total=n_bits, desc=desc, disable=disable_tqdm) as pbar:            
             for i, z in enumerate(ind_msg):                
                 x, y = _synthesize_edge(z, n_nodes)                

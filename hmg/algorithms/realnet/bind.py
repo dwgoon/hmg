@@ -19,15 +19,21 @@ from hmg.utils import get_bitwidth
 
 class BIND(Base):
 
-    def __init__(self, engine, *args, **kwargs):
-        super().__init__(engine, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.initialize()
 
     def initialize(self):
-        self._ind_edge_ee = None 
+        self._ind_edge_ee = None
         self._ind_edge_eo = None
         self._ind_edge_oe = None
         self._ind_edge_oo = None
+
+        self._ind_bits_ee = None
+        self._ind_bits_eo = None
+        self._ind_bits_oe = None
+        self._ind_bits_oo = None
+
         self._estimated_max_bits = None
         self._is_max_bits_estimated = False
         
@@ -55,6 +61,63 @@ class BIND(Base):
         self._is_max_bits_estimated = True
 
         return self._estimated_max_bits
+
+    def find_bit_patterns(self, secret_bits, include_len_bits=False):
+        
+        if include_len_bits:
+            msg_bits = secret_bits
+            n_bitwidth = get_bitwidth(len(msg_bits))
+            n_bytes_msg = int(len(msg_bits) / 8)
+            
+            msg_len_bits = bitstring.pack("uint:%d"%(n_bitwidth), n_bytes_msg)
+            
+            secret_bits = msg_len_bits + msg_bits  
+        
+        # Find two-bit patterns in the message.
+        err_msg = "The number of {et}-type edges is not enough " \
+                  "for encoding {et}-type bits."
+
+        arr_two_bits = np.array(secret_bits, dtype=np.uint8).reshape(-1, 2)
+
+        self._ind_bits_ee = np.where((arr_two_bits == [0, 0]).all(axis=1))[0]
+        if self._ind_bits_ee.size > self._ind_edge_ee.size:
+            raise RuntimeError(err_msg.format(et="EE"))
+
+        self._ind_bits_eo = np.where((arr_two_bits == [0, 1]).all(axis=1))[0]
+        if self._ind_bits_eo.size > self._ind_edge_eo.size:
+            raise RuntimeError(err_msg.format(et="EO"))
+
+        self._ind_bits_oe = np.where((arr_two_bits == [1, 0]).all(axis=1))[0]
+        if self._ind_bits_oe.size > self._ind_edge_oe.size:
+            raise RuntimeError(err_msg.format(et="OE"))
+
+        self._ind_bits_oo = np.where((arr_two_bits == [1, 1]).all(axis=1))[0]
+        if self._ind_bits_oo.size > self._ind_edge_oo.size:
+            raise RuntimeError(err_msg.format(et="OO"))
+            
+        return (self._ind_bits_ee,
+                self._ind_bits_eo,
+                self._ind_bits_oe,
+                self._ind_bits_oo)
+
+
+    def ensure_stego_edges(self, g, df_edges_cover, secret_bits, pw=None):
+        """This method is intended to be overridden by subclasses
+           to ensure that the number of stego edges to encode the secret bits is guaranteed.
+        """
+        self.find_bit_patterns(secret_bits)
+
+    def get_actual_bit_size(self, msg_bits):    
+        # Calculate the bit-width considering the number of df_edges_cover
+        # len_list_edges = len(df_edges_cover)
+
+        n_bitwidth = get_bitwidth(len(msg_bits))
+        n_bytes_msg = int(len(msg_bits) / 8)
+        
+        msg_len_bits = bitstring.pack("uint:%d"%(n_bitwidth), n_bytes_msg)
+        
+        secret_bits = msg_len_bits + msg_bits  # bits is the bitstream to be hidden.
+        return len(secret_bits)
 
     def encode(self, g, df_edges_cover, msg_bits, pw=None):
         """Encode the message bits according to the parity of node degree.
@@ -87,42 +150,21 @@ class BIND(Base):
         
         msg_len_bits = bitstring.pack("uint:%d"%(n_bitwidth), n_bytes_msg)
         
-        bits = msg_len_bits + msg_bits  # bits is the bitstream to be hidden.
-        n_bits = len(bits)
-                
+        secret_bits = msg_len_bits + msg_bits  # bits is the bitstream to be hidden.
+        n_bits = len(secret_bits)
+
+        g, df_edges_cover = self.ensure_stego_edges(g, df_edges_cover, secret_bits, pw)
+
         n_edges_stego = int(n_bits / 2)
         ind_edge_stego = np.zeros(n_edges_stego, dtype=np.int64)
-        desc = "Encode Message Bits in Edge List"
+        desc = "Encode message bits in edge list"
         with tqdm(total=n_bits, desc=desc, disable=disable_tqdm) as pbar:
-            # arr_two_bits = np.array(list(zip(bits[0::2], bits[1::2])),
-            #                        dtype=np.uint8) 
-            arr_two_bits = np.array(bits, dtype=np.uint8).reshape(-1, 2)
-            
-            err_msg = "The number of {et}-type edges is not enough "\
-                      "for encoding {et}-type bits."
-                      
-            # Find bit patterns in the message.
-            ind_bits_ee = np.where((arr_two_bits == [0, 0]).all(axis=1))[0]
-            if ind_bits_ee.size > self._ind_edge_ee.size:
-                raise RuntimeError(err_msg.format(et="EE"))
-            
-            ind_bits_eo = np.where((arr_two_bits == [0, 1]).all(axis=1))[0]
-            if ind_bits_eo.size > self._ind_edge_eo.size:
-                raise RuntimeError(err_msg.format(et="EO"))
-            
-            ind_bits_oe = np.where((arr_two_bits == [1, 0]).all(axis=1))[0]
-            if ind_bits_oe.size > self._ind_edge_oe.size:
-                raise RuntimeError(err_msg.format(et="OE"))
-            
-            ind_bits_oo = np.where((arr_two_bits == [1, 1]).all(axis=1))[0]
-            if ind_bits_oo.size > self._ind_edge_oo.size:
-                raise RuntimeError(err_msg.format(et="OO"))
-           
+
             if self._verbose > 0:
-                write_log("Num. Two Bit Patterns (EE): %d"%(len(ind_bits_ee)))
-                write_log("Num. Two Bit Patterns (EO): %d"%(len(ind_bits_eo)))
-                write_log("Num. Two Bit Patterns (OE): %d"%(len(ind_bits_oe)))
-                write_log("Num. Two Bit Patterns (OO): %d"%(len(ind_bits_oo)))
+                write_log("Num. Two Bit Patterns (EE): %d"%(len(self._ind_bits_ee)))
+                write_log("Num. Two Bit Patterns (EO): %d"%(len(self._ind_bits_eo)))
+                write_log("Num. Two Bit Patterns (OE): %d"%(len(self._ind_bits_oe)))
+                write_log("Num. Two Bit Patterns (OO): %d"%(len(self._ind_bits_oo)))
 
             # Randomize the order of the four-type edges.
             if pw is not None:
@@ -133,23 +175,23 @@ class BIND(Base):
                 np.random.shuffle(self._ind_edge_oo)
                                    
             # Map the two-bit patterns to the edges.
-            ind_edge_stego[ind_bits_ee] = self._ind_edge_ee[:ind_bits_ee.size]
-            pbar.update(2 * ind_bits_ee.size)
+            ind_edge_stego[self._ind_bits_ee] = self._ind_edge_ee[:self._ind_bits_ee.size]
+            pbar.update(2 * self._ind_bits_ee.size)
 
-            ind_edge_stego[ind_bits_eo] = self._ind_edge_eo[:ind_bits_eo.size]
-            pbar.update(2 * ind_bits_eo.size)
+            ind_edge_stego[self._ind_bits_eo] = self._ind_edge_eo[:self._ind_bits_eo.size]
+            pbar.update(2 * self._ind_bits_eo.size)
             
-            ind_edge_stego[ind_bits_oe] = self._ind_edge_oe[:ind_bits_oe.size]
-            pbar.update(2 * ind_bits_oe.size)
+            ind_edge_stego[self._ind_bits_oe] = self._ind_edge_oe[:self._ind_bits_oe.size]
+            pbar.update(2 * self._ind_bits_oe.size)
             
-            ind_edge_stego[ind_bits_oo] = self._ind_edge_oo[:ind_bits_oo.size]
-            pbar.update(2 * ind_bits_oo.size)
+            ind_edge_stego[self._ind_bits_oo] = self._ind_edge_oo[:self._ind_bits_oo.size]
+            pbar.update(2 * self._ind_bits_oo.size)
     
             df_out = pd.concat([df_edges_cover.iloc[ind_edge_stego, :],
-                                df_edges_cover.iloc[self._ind_edge_ee[ind_bits_ee.size:], :],
-                                df_edges_cover.iloc[self._ind_edge_eo[ind_bits_eo.size:], :],
-                                df_edges_cover.iloc[self._ind_edge_oe[ind_bits_oe.size:], :],
-                                df_edges_cover.iloc[self._ind_edge_oo[ind_bits_oo.size:], :]])
+                                df_edges_cover.iloc[self._ind_edge_ee[self._ind_bits_ee.size:], :],
+                                df_edges_cover.iloc[self._ind_edge_eo[self._ind_bits_eo.size:], :],
+                                df_edges_cover.iloc[self._ind_edge_oe[self._ind_bits_oe.size:], :],
+                                df_edges_cover.iloc[self._ind_edge_oo[self._ind_bits_oo.size:], :]])
 
         # Randomize the order of df_edges_cover in the list.
         if pw is not None:            
