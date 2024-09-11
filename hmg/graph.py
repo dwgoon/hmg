@@ -56,7 +56,16 @@ class NetworkxGraph(Graph):
             return self._graph.degree(x)
         else:
             return self._graph.degree
-    
+
+    def neighbors(self, x):
+        return self._graph.neighbors(x)
+
+    def successors(self, x):
+        return self._graph.successors(x)
+
+    def predecessors(self, x):
+        return self._graph.predecessors(x)
+
     def num_nodes(self):
         return self._graph.number_of_nodes()
     
@@ -86,8 +95,7 @@ class NetworkxGraph(Graph):
 
     def del_node(self, x):
         return self._graph.remove_node(x)
-       
-    
+
     
 class IgraphGraph(Graph):    
     def __init__(self, g):                
@@ -108,7 +116,16 @@ class IgraphGraph(Graph):
             return self._graph.degree(x)
         else:
             return self._graph.degree
-        
+
+    def neighbors(self, x):
+        return self._graph.neighbors(x)
+
+    def successors(self, x):
+        return self._graph.successors(x)
+
+    def predecessors(self, x):
+        return self._graph.predecessors(x)
+
     def num_nodes(self):
         return self._graph.vcount()
     

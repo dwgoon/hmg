@@ -33,7 +33,7 @@ class BYNIS(Base):
     def encode(self,
                msg_bytes,
                pw=None,
-               n_extra_edges=None,
+               extra_target_edges=None,
                policy=None,
                g_ref=None,
                directed=False,
@@ -137,7 +137,7 @@ class BYNIS(Base):
             
             list_edges_ref = list(g_ref.edges)
             max_node_id = max(node_ids)
-            if n_extra_edges:
+            if extra_target_edges:
                 
                 if policy is None:
                     policy = (0,)
@@ -153,7 +153,7 @@ class BYNIS(Base):
                     
                 n_nodes = g.num_nodes()
                 if 0 in policy:
-                    for i in range(n_extra_edges):
+                    for i in range(extra_target_edges):
                         edge = np.random.randint(0, n_nodes, size=2)                
                         
                         while g.has_edge(*edge):                    
@@ -165,7 +165,7 @@ class BYNIS(Base):
                         pbar.update(1)
                     # end of for                    
                 else:
-                    for i in range(n_extra_edges):     
+                    for i in range(extra_target_edges):     
                         
                         while True:           
                             if 1 in policy:

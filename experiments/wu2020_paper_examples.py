@@ -10,7 +10,7 @@ This is a reproduction of the examples in the following paper:
 import numpy as np
 import pandas as pd
 
-from hmg.algorithms.synnet import WU2020
+from hmg.algorithms.hybrid import WU2020
 from hmg.engine import GraphEngine
 from hmg.msg import to_bitarr
         

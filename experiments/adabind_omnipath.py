@@ -10,33 +10,39 @@ from hmg.logging import use_logging, write_log, finish_logging
 if __name__ == "__main__":
     t_beg = time.perf_counter()
 
-    use_logging("ex-bind-omnipath", mode='w')
+    # use_logging("ex-adabind-omnipath", mode='w')
     ge = GraphEngine("networkx")    
     
     fpath_cover = "../data/test/omnipath/omnipath.sif"
     fpath_stego = "../data/test/omnipath/omnipath_sg.sif"
-    pw = 1234  # Password is used for seeding.    
+    pw = None  # Password is used for seeding.    
+
+    is_directed = False
 
     # Create an algorithm object
-    alg = AdaBIND(engine=ge)
+    alg = AdaBIND(engine=ge, 
+                  max_iter=1000,
+                  extra_target_edges=5,
+                  verbose=0)
     
     # Create the data structures from the network data
     fileio = ge.create_fileio()
-    g_cover, df_cover = fileio.read_sif(fpath_cover, directed=True)
+    g_cover, df_cover = fileio.read_sif(fpath_cover, directed=is_directed)
     
     # Create a random message based on the number of edges.
     n_edges = g_cover.num_nodes()
-    n_bits_msg = int(7 * n_edges)
+    n_bits_msg = int(6.8  * n_edges)
     msg_bits = generate_bits(n_bits_msg // 8)
     
     # Hide the message
-    df_stego, stats_encode = alg.encode(g_cover, df_cover, msg_bits, pw)
-    
+    df_stego, stats_encode, g_cover_new, df_cover_new \
+                                = alg.encode(g_cover, df_cover, msg_bits, pw) 
+            
     # Write the stego in a network file
     fileio.write_sif(fpath_stego, df_stego)
     
     # Recover the message
-    g_stego, df_stego = fileio.read_sif(fpath_stego, directed=True)
+    g_stego, df_stego = fileio.read_sif(fpath_stego, directed=is_directed)
     
     write_log("Num. Nodes in Stego Network: %d"%(g_stego.num_nodes()))
     write_log("Num. Edges in Stego Network: %d"%(g_stego.num_edges()))

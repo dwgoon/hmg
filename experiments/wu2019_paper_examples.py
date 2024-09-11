@@ -39,7 +39,7 @@ if __name__ == "__main__":
     msg_bits = np.array([1, 0, 1, 0, 0, 1, 0, 1, 0, 0,
                           0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0])
         
-    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=2, n_extra_edges=0)
+    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=2, extra_target_edges=0)
     msg_bits_rec, _ = alg.decode(g_stego, msg_bits.size)
         
     # Calculate BER.    
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # [An example of Modified OP 1]
     # Create a random message. 
     msg_bits = generate_bits(20)
-    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=1, n_extra_edges=10)
+    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=1, extra_target_edges=10)
     msg_bits_rec, _ = alg.decode(g_stego, len(msg_bits))
     
     # Calculate BER.    
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     print("\nBER:", ber)
         
     # [An example of Modified OP 2]
-    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=2, n_extra_edges=10)
+    g_msg, g_stego, _ = alg.encode(msg_bits, embed=True, op=2, extra_target_edges=10)
     msg_bits_rec, _ = alg.decode(g_stego, len(msg_bits))
     
     # Calculate BER.    

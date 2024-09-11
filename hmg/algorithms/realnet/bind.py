@@ -214,7 +214,6 @@ class BIND(Base):
         stats["encoded_msg_size"] = len(msg_bits) / 8  # in bytes
         return df_out, stats
     
-    
     def get_stego_edges(self, g, df_edges_stego, pw=None):
         
         if pw is not None:

@@ -50,7 +50,7 @@ class WU2019(Base):
                pw=None,
                embed=True,
                op=1,
-               n_extra_edges=None,
+               extra_target_edges=None,
                max_node_index=None):
                 
         disable_tqdm = True if self._verbose == 0 else False        
@@ -104,8 +104,8 @@ class WU2019(Base):
         # Embed the message-graph.
         g_stego = self.engine.create_graph(directed=True)
         
-        if n_extra_edges and not isinstance(n_extra_edges, int):
-            raise TypeError("n_extra_edges should be int type.")
+        if extra_target_edges and not isinstance(extra_target_edges, int):
+            raise TypeError("extra_target_edges should be int type.")
         
         # Modified OP 1 and OP 2 in the paper.
         if max_node_index:
@@ -118,14 +118,14 @@ class WU2019(Base):
         else:
             max_node_index = n_nodes + 1
                         
-        if n_extra_edges:
+        if extra_target_edges:
             list_extra_edges = list()
             if not max_node_index:
-                max_nodes_index = n_nodes + n_extra_edges
+                max_nodes_index = n_nodes + extra_target_edges
 
         n_progress = n_nodes
-        if n_extra_edges:
-            n_progress += n_extra_edges 
+        if extra_target_edges:
+            n_progress += extra_target_edges 
             
         desc = "Embed the message graph"
         with tqdm(total=n_nodes, desc=desc, disable=disable_tqdm) as pbar:
@@ -139,7 +139,7 @@ class WU2019(Base):
                 # end of for        
                 
                 
-                if not n_extra_edges:
+                if not extra_target_edges:
                     if not less_ind_exists:
                         # OP 1 in the paper.
                         g_stego.add_edge(i, n_nodes + 1) 
@@ -164,11 +164,11 @@ class WU2019(Base):
                 pbar.update(1)                              
             # end of for
             
-            if n_extra_edges:
+            if extra_target_edges:
                 # Randomly insert extra edges according to Modified OP 1.
                 np.random.shuffle(list_extra_edges)
                 # print(list_extra_edges)
-                for i in range(n_extra_edges):
+                for i in range(extra_target_edges):
                     if i >= len(list_extra_edges):
                         break
                     

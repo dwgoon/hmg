@@ -24,6 +24,7 @@ bw2fmt = {1: "B", 2: "H", 4: "I", 8: "Q"}
 class BYMOND(Base):
     def __init__(self, engine, *args, **kwargs):
         super().__init__(engine, *args, **kwargs)
+        self.initialize()
 
     def initialize(self):
         self._arr_cnt_deg = np.zeros(256, dtype=np.uint64)
@@ -49,7 +50,7 @@ class BYMOND(Base):
                 min_cnt_deg = index.size
 
         self._estimated_max_bytes = 256 * min_cnt_deg
-        if self._self._verbose > 0:
+        if self._verbose > 0:
             write_log("Estimated Max. Message Bytes: %d"%(self._estimated_max_bytes))
        
         self._is_max_bytes_estimated = True

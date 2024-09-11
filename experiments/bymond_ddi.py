@@ -20,7 +20,7 @@ if __name__ == "__main__":
     fpath_stego = "bymond_ddi.csv"
     
     # Create an algorithm object
-    alg = BYMOND()
+    alg = BYMOND(ge)
     
     # Create the data structures from the network data.
     fileio = ge.create_fileio()

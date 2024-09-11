@@ -27,26 +27,26 @@ class FileIO(object):
     def from_pandas_dataframe(self, df, directed):
         raise NotImplementedError()
         
-    def read_edgelist(self, fpath, directed=False):
-        df = pd.read_csv(fpath, dtype=str)
+    def read_edgelist(self, fpath, directed=False, nrows=None):
+        df = pd.read_csv(fpath, dtype=str, nrows=nrows)
         columns = list(df.columns)
         columns[0] = "Source"
         columns[1] = "Target"
         df.columns = columns
-        g = self.from_pandas_dataframe(df.drop_duplicates(), directed)                  
+        g = self.from_pandas_dataframe(df.drop_duplicates(), directed)
         return g, df
         
     def write_edgelist(self, fpath, df):
         df.to_csv(fpath, index=False)
         
-    def read_ogb(self, fpath, directed=False):
-        return self.read_edgelist(fpath, directed)
+    def read_ogb(self, fpath, directed=False, nrows=None):
+        return self.read_edgelist(fpath, directed, nrows)
         
     def write_ogb(self, fpath, df):
         self.write_edgelist(fpath, df)
     
-    def read_sif(self, fpath, directed=False, header=None):            
-        df = pd.read_csv(fpath, delim_whitespace=True, header=header, dtype=str)
+    def read_sif(self, fpath, directed=False, header=None, nrows=None):
+        df = pd.read_csv(fpath, delim_whitespace=True, header=header, nrows=nrows, dtype=str)
         if header:
             columns = df.columns.copy().tolist()
             columns[2], columns[1] = columns[1], columns[2]
@@ -67,8 +67,8 @@ class FileIO(object):
             
         df.to_csv(fpath, sep=' ', index=False, header=header, columns=columns)   
     
-    def read_database_string(self, fpath, directed=False):
-        df = pd.read_csv(fpath, delim_whitespace=True, dtype=str)
+    def read_database_string(self, fpath, directed=False, nrows=None):
+        df = pd.read_csv(fpath, delim_whitespace=True, dtype=str, nrows=nrows)
         g = self.from_pandas_dataframe(df.drop_duplicates(), directed)
         
         return g, df
@@ -85,7 +85,7 @@ class NetworkxIO(FileIO):
         super().__init__(engine)
         self.nx = importlib.import_module("networkx")    
 
-    def from_pandas_dataframe(self, df, directed):        
+    def from_pandas_dataframe(self, df, directed):
         
         edge_attr = df.columns[2:].tolist()
         if len(edge_attr) == 0:
