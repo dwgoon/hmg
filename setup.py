@@ -15,6 +15,7 @@ setup(
         'pandas',
         'networkx',
         'bitstring',
-        'tqdm'
+        'tqdm',
+        "pycryptodome"
     ]
 )

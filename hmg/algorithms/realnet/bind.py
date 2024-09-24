@@ -21,9 +21,9 @@ class BIND(Base):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.initialize()
+        BIND.initialize(self)
 
-    def initialize(self):
+    def initialize(self, *args, **kwargs):
         self._ind_edge_ee = None
         self._ind_edge_eo = None
         self._ind_edge_oe = None
@@ -39,8 +39,77 @@ class BIND(Base):
         
         gc.collect()
 
+    @property
+    def ind_edge_ee(self):
+        return self._ind_edge_ee
 
-    def estimate_max_bits(self, g, df_edges_cover):           
+    @property
+    def ind_edge_eo(self):
+        return self._ind_edge_eo
+
+    @property
+    def ind_edge_oe(self):
+        return self._ind_edge_oe
+
+    @property
+    def ind_edge_oo(self):
+        return self._ind_edge_oo
+
+    @property
+    def ind_bits_ee(self):
+        return self._ind_bits_ee
+
+    @property
+    def ind_bits_eo(self):
+        return self._ind_bits_eo
+
+    @property
+    def ind_bits_oe(self):
+        return self._ind_bits_oe
+
+    @property
+    def ind_bits_oo(self):
+        return self._ind_bits_oo
+
+    @property
+    def is_max_bits_estimated(self):
+        return self._is_max_bits_estimated
+
+    @is_max_bits_estimated.setter
+    def is_max_bits_estimated(self, val):
+        self._is_max_bits_estimated = val
+
+    def get_num_missing_edges(self, g, df_edges_cover, msg_bits):
+
+        # Count the number of each edge type.
+        get_degree = lambda x: g.degree(x)
+        deg_a = df_edges_cover.iloc[:, 0].apply(get_degree)
+        deg_b = df_edges_cover.iloc[:, 1].apply(get_degree)
+
+        self._ind_edge_ee = df_edges_cover[(deg_a % 2 == 0) & (deg_b % 2 == 0)].index.to_numpy()
+        self._ind_edge_eo = df_edges_cover[(deg_a % 2 == 0) & (deg_b % 2 == 1)].index.to_numpy()
+        self._ind_edge_oe = df_edges_cover[(deg_a % 2 == 1) & (deg_b % 2 == 0)].index.to_numpy()
+        self._ind_edge_oo = df_edges_cover[(deg_a % 2 == 1) & (deg_b % 2 == 1)].index.to_numpy()
+
+        # Find two-bit patterns in the message.
+        n_bitwidth = get_bitwidth(df_edges_cover.shape[0])
+        n_bytes_msg = len(msg_bits) // 8
+        msg_len_bits = bitstring.pack("uint:%d" % (n_bitwidth), n_bytes_msg)
+        secret_bits = msg_len_bits + msg_bits
+
+        arr_two_bits = np.array(secret_bits, dtype=np.uint8).reshape(-1, 2)
+
+        self._ind_bits_ee = np.where((arr_two_bits == [0, 0]).all(axis=1))[0]
+        self._ind_bits_eo = np.where((arr_two_bits == [0, 1]).all(axis=1))[0]
+        self._ind_bits_oe = np.where((arr_two_bits == [1, 0]).all(axis=1))[0]
+        self._ind_bits_oo = np.where((arr_two_bits == [1, 1]).all(axis=1))[0]
+
+        return np.array([self._ind_bits_ee.size - self._ind_edge_ee.size,
+                         self._ind_bits_eo.size - self._ind_edge_eo.size,
+                         self._ind_bits_oe.size - self._ind_edge_oe.size,
+                         self._ind_bits_oo.size - self._ind_edge_oo.size], dtype=np.int64)
+
+    def estimate_max_bits(self, g, df_edges_cover):
         get_degree = lambda x: g.degree(x)
         deg_a = df_edges_cover.iloc[:, 0].apply(get_degree)
         deg_b = df_edges_cover.iloc[:, 1].apply(get_degree)
@@ -62,7 +131,7 @@ class BIND(Base):
 
         return self._estimated_max_bits
 
-    def find_bit_patterns(self, secret_bits, include_len_bits=False):
+    def find_bit_patterns(self, secret_bits, include_len_bits=False, disable_except=False):
         
         if include_len_bits:
             msg_bits = secret_bits
@@ -80,19 +149,19 @@ class BIND(Base):
         arr_two_bits = np.array(secret_bits, dtype=np.uint8).reshape(-1, 2)
 
         self._ind_bits_ee = np.where((arr_two_bits == [0, 0]).all(axis=1))[0]
-        if self._ind_bits_ee.size > self._ind_edge_ee.size:
+        if not disable_except and self._ind_bits_ee.size > self._ind_edge_ee.size:
             raise RuntimeError(err_msg.format(et="EE"))
 
         self._ind_bits_eo = np.where((arr_two_bits == [0, 1]).all(axis=1))[0]
-        if self._ind_bits_eo.size > self._ind_edge_eo.size:
+        if not disable_except and self._ind_bits_eo.size > self._ind_edge_eo.size:
             raise RuntimeError(err_msg.format(et="EO"))
 
         self._ind_bits_oe = np.where((arr_two_bits == [1, 0]).all(axis=1))[0]
-        if self._ind_bits_oe.size > self._ind_edge_oe.size:
+        if not disable_except and self._ind_bits_oe.size > self._ind_edge_oe.size:
             raise RuntimeError(err_msg.format(et="OE"))
 
         self._ind_bits_oo = np.where((arr_two_bits == [1, 1]).all(axis=1))[0]
-        if self._ind_bits_oo.size > self._ind_edge_oo.size:
+        if not disable_except and self._ind_bits_oo.size > self._ind_edge_oo.size:
             raise RuntimeError(err_msg.format(et="OO"))
             
         return (self._ind_bits_ee,
@@ -106,6 +175,8 @@ class BIND(Base):
            to ensure that the number of stego edges to encode the secret bits is guaranteed.
         """
         self.find_bit_patterns(secret_bits)
+        
+        return g, df_edges_cover
 
     def get_actual_bit_size(self, msg_bits):    
         # Calculate the bit-width considering the number of df_edges_cover
@@ -149,7 +220,6 @@ class BIND(Base):
         n_bytes_msg = int(len(msg_bits) / 8)
         
         msg_len_bits = bitstring.pack("uint:%d"%(n_bitwidth), n_bytes_msg)
-        
         secret_bits = msg_len_bits + msg_bits  # bits is the bitstream to be hidden.
         n_bits = len(secret_bits)
 
@@ -228,7 +298,6 @@ class BIND(Base):
         n_edges = g.num_edges()
         n_bitwidth = get_bitwidth(n_edges)
         i_end_bitwidth = n_bitwidth // 2
-
 
         # Get only the number of message bytes.
         get_bits = lambda x: "%d%d"%(g.degree(x[0])%2, g.degree(x[1])%2)

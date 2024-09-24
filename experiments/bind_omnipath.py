@@ -25,7 +25,7 @@ if __name__ == "__main__":
     g_cover, df_cover = fileio.read_sif(fpath_cover, directed=True)
     
     # Create a random message based on the number of edges.
-    n_edges = g_cover.num_nodes()
+    n_edges = g_cover.num_edges()
     n_bits_msg = int(0.95*n_edges)  # Use 95% of edges
     msg_bits = generate_bits(n_bits_msg // 8)    
     

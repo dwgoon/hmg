@@ -52,7 +52,7 @@ class NetworkxGraph(Graph):
         return self.nx.is_isomorphic(self._graph, g._graph)
     
     def degree(self, x=None):
-        if x:
+        if x is not None:
             return self._graph.degree(x)
         else:
             return self._graph.degree
@@ -112,7 +112,7 @@ class IgraphGraph(Graph):
         return self._graph.isomorphic(g._graph)
 
     def degree(self, x):
-        if x:
+        if x is not None:
             return self._graph.degree(x)
         else:
             return self._graph.degree

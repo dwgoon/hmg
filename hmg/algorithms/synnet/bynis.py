@@ -23,6 +23,7 @@ from hmg.logging import write_log
 # Byte-width to unsigned format in struct standard package
 bw2fmt = {1: "B", 2: "H", 4: "I", 8: "Q"}
 
+
 class BYNIS(Base):    
     def __init__(self, engine, *args, **kwargs):
         super().__init__(engine, *args, **kwargs)
@@ -33,9 +34,9 @@ class BYNIS(Base):
     def encode(self,
                msg_bytes,
                pw=None,
-               extra_target_edges=None,
+               n_extra_edges=None,
                policy=None,
-               g_ref=None,
+               nxg_ref=None,
                directed=False,
                max_try_rename=100):
         """Encode the message bytes into the node IDs of a synthetic edge.
@@ -71,18 +72,18 @@ class BYNIS(Base):
         bias = max([int(2**np.ceil(np.log2(n_nodes))), 256])
         data_adjusted = data_origin.astype(np.uint16) + bias
         
-        # if g_ref:
-        #     if not isinstance(g_ref, nx.Graph):
-        #         raise TypeError("g_ref should be nx.Graph object.")
+        # if nxg_ref:
+        #     if not isinstance(nxg_ref, nx.Graph):
+        #         raise TypeError("nxg_ref should be nx.Graph object.")
         # else:
-        if not g_ref:
+        if not nxg_ref:
             n_edges_per_node = int(n_bytes/n_nodes) + 1
             p_add_tri = 0.1
-            g_ref = powerlaw_cluster_graph(n_nodes,
-                                           n_edges_per_node,
-                                           p_add_tri)
+            nxg_ref = powerlaw_cluster_graph(n_nodes,
+                                             n_edges_per_node,
+                                             p_add_tri)
             
-        degree_ref = np.array([v for k, v in g_ref.degree])
+        degree_ref = np.array([v for k, v in nxg_ref.degree])
         degree_ref[::-1].sort()
         
         num_use_degree = np.zeros(degree_ref.size, dtype=np.uint32)                
@@ -135,9 +136,10 @@ class BYNIS(Base):
                 pbar.update(1)         
             # end of for
             
-            list_edges_ref = list(g_ref.edges)
+            list_edges_ref \
+                    = [(int(edge[0]), int(edge[1])) for edge in nxg_ref.edges]
             max_node_id = max(node_ids)
-            if extra_target_edges:
+            if n_extra_edges:
                 
                 if policy is None:
                     policy = (0,)
@@ -153,7 +155,7 @@ class BYNIS(Base):
                     
                 n_nodes = g.num_nodes()
                 if 0 in policy:
-                    for i in range(extra_target_edges):
+                    for i in range(n_extra_edges):
                         edge = np.random.randint(0, n_nodes, size=2)                
                         
                         while g.has_edge(*edge):                    
@@ -165,7 +167,7 @@ class BYNIS(Base):
                         pbar.update(1)
                     # end of for                    
                 else:
-                    for i in range(extra_target_edges):     
+                    for i in range(n_extra_edges):     
                         
                         while True:           
                             if 1 in policy:
@@ -237,7 +239,9 @@ class BYNIS(Base):
         stats["encoded_msg_size"] = len(msg_bytes)        
         stats["num_try_rename"] = num_try_rename
         
-        df_out = pd.DataFrame(list_edges_stego)
+        df_out = pd.DataFrame(list_edges_stego, 
+                              columns=["Source", "Target"],
+                              dtype=np.int64)
         np.random.seed(pw)  # Seed using password.
         index_rand = np.arange(df_out.shape[0])
         np.random.shuffle(index_rand)

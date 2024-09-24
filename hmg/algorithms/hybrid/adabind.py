@@ -37,27 +37,61 @@ from hmg.utils import get_bitwidth
 
 class AdaBIND(BIND):
     def __init__(self, 
+                 engine=None,
                  ada_policy="GW2N",
                  max_iter=None,
                  extra_target_edges=None,
                  n_samp_edges=None,
+                 track_greedy_choices=False,
                  *args,
                  **kwargs):
         
-        super().__init__(*args, **kwargs)
+        super().__init__(engine, *args, **kwargs)
+        AdaBIND.initialize(self,
+                           ada_policy,
+                           max_iter,
+                           extra_target_edges,
+                           n_samp_edges,
+                           track_greedy_choices)
+        
+        
+    def initialize(self,
+                   ada_policy,
+                   max_iter,
+                   extra_target_edges,
+                   n_samp_edges,
+                   track_greedy_choices,
+                   *args,
+                   **kwargs):
+        
+        super().initialize(*args, **kwargs)
+        
+        if ada_policy is None:
+            ada_policy = "GW2N"
         self._ada_policy = ada_policy
-        self._max_iter = max_iter
+            
+        if max_iter is None:
+            max_iter = 10000
+        self._max_iter = max_iter        
+        
+        if extra_target_edges is None:
+            extra_target_edges = 5            
         self._extra_target_edges = extra_target_edges
-        self._n_samp_edgees = n_samp_edges
         
-    def initialize(self):
-        super().initialize()
+        if n_samp_edges is None:
+            n_samp_edges = 50            
+        self._n_samp_edges = n_samp_edges
         
-        self._ada_policy = "GW2N"
-        self._max_iter = 100
-        self._extra_target_edges = 5
-        self._n_samp_edges = 50
+        if track_greedy_choices is None:
+            track_greedy_choices = False            
+        self._track_greedy_choices = track_greedy_choices
         
+        
+        # i-th iteration at which the algorithm stops to stop adding edges.
+        self._stop_iter = 0  
+        self._greedy_choices = []
+
+        # Internal variables.
         self._g_new = None
         self._df_edges_cover_new = None
         
@@ -78,7 +112,7 @@ class AdaBIND(BIND):
     @max_iter.setter
     def max_iter(self, val):
         self._max_iter = val
-    
+
     @property
     def extra_target_edges(self):
         return self._extra_target_edges
@@ -93,8 +127,24 @@ class AdaBIND(BIND):
 
     @n_samp_edges.setter
     def n_samp_edges(self, val):
-        self._n_samp_edges = val                    
-        
+        self._n_samp_edges = val
+
+    @property
+    def track_greedy_choices(self):
+        return self._track_greedy_choices
+
+    @track_greedy_choices.setter
+    def track_greedy_choices(self, val):
+        self._track_greedy_choices = val
+    
+    @property
+    def stop_iter(self):  # read only
+        return self._stop_iter
+
+    @property
+    def greedy_choices(self): # read only
+        return self._greedy_choices
+
 
     def find_bit_patterns(self, secret_bits, include_len_bits=False):
         if include_len_bits:
@@ -283,20 +333,38 @@ class AdaBIND(BIND):
         nodes = list(g_t0.graph.nodes)
         successors, predecessors = self._find_neighbors(nodes, g_t0, df_edges_t0)
 
-        min_l1_dist = np.inf
-        min_l1_dist_edge = None
-        min_changed_num_edges = None
+        n_samp_nodes = min(len(nodes), self._n_samp_edges // 2)        
+        if n_samp_nodes % 2 != 0:  # Ensure the number of sampled nodes is even number.
+            n_samp_nodes = n_samp_nodes - 1
+
+        min_l1_dist = np.iinfo(np.int64).max
+        min_l1_dist_edge = (np.iinfo(np.int64).max, np.iinfo(np.int64).max)
+        min_changed_num_edges = current_num_edges
+        min_delta_num_edges = np.array([0, 0, 0, 0])
+
+        if self.track_greedy_choices:
+            arr_l1_dist = np.zeros(self.max_iter, dtype=np.int64)
+            arr_edge = np.zeros((self.max_iter, 2), dtype=np.int64)
+            arr_num_edges = np.zeros((self.max_iter, 4), dtype=np.int64)
+            arr_delta_num_edges = np.zeros((self.max_iter, 4), dtype=np.int64)
 
         disable_tqdm = True if self._verbose == 0 else False
 
         desc = "Search additional edges to encode the secret message"
         with tqdm(total=n_iter, desc=desc, disable=disable_tqdm) as pbar:
+            self._stop_iter = 0
             for i in range(n_iter):
-                np.random.shuffle(nodes)
-                # comb_nodes = combinations(nodes, 2)
-                # successors, predecessors = self._find_neighbors(nodes, df_edges_t0)
+                self._stop_iter = i
 
-                n_samp_nodes = min(len(nodes), self._n_samp_edges // 2)
+                # Tracking the greedy chice.
+                if self.track_greedy_choices:
+                    arr_l1_dist[i] = min_l1_dist
+                    arr_edge[i, :] = min_l1_dist_edge
+                    arr_num_edges[i, :] = min_changed_num_edges
+                    arr_delta_num_edges[i, :] = min_delta_num_edges
+
+                np.random.shuffle(nodes)
+
                 for j in range(0, n_samp_nodes, 2):
                     if j >= n_samp_nodes:
                         break
@@ -328,8 +396,9 @@ class AdaBIND(BIND):
                         min_l1_dist = l1_dist
                         min_l1_dist_edge = (src, trg)
                         min_changed_num_edges = changed_num_edges
+                        min_delta_num_edges = delta_num_edges
 
-                        if l1_dist == 0:
+                        if self.extra_target_edges != 0 and l1_dist  <= 1:
                             is_sol_found = True
                             break
                         # end of if
@@ -339,7 +408,7 @@ class AdaBIND(BIND):
                 # print(f"[Iteration #{i}] min. l1_dist: {min_l1_dist}, edge: {min_l1_dist_edge}")
 
                 if self._verbose > 1:
-                    write_log(f"- [Iteration #{i}] min. l1_dist: {min_l1_dist}, edge: {min_l1_dist_edge}")
+                   tqdm.write(f"- [Iteration #{i}] min. l1_dist: {min_l1_dist}, edge: {min_l1_dist_edge}")
 
                 if g_t0.has_edge(*min_l1_dist_edge):
                     continue
@@ -373,6 +442,14 @@ class AdaBIND(BIND):
         self._g_new = g_t0
         self._df_edges_cover_new = df_edges_t0
         self.estimate_max_bits(g_t0, df_edges_t0)
+
+        if self.track_greedy_choices:
+            self._greedy_choices = {
+                "l1_dist": arr_l1_dist,
+                "edge": arr_edge,
+                "num_edges": arr_num_edges,
+                "delta_num_edges": arr_delta_num_edges,
+            }
         
         return self._g_new, self._df_edges_cover_new
         
