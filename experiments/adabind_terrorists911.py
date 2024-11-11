@@ -45,9 +45,9 @@ if __name__ == "__main__":
     pw = 1234
 
     df_stego, stats_encode, g_cover_new, df_cover_new = alg.encode(g_cover, 
-                                                                     df_cover, 
-                                                                     msg_bits, 
-                                                                     pw)
+                                                                   df_cover, 
+                                                                   msg_bits, 
+                                                                   pw)
         
     # Write the stego in a network file
     fileio.write_edgelist(fpath_stego, df_stego)
@@ -80,8 +80,6 @@ if __name__ == "__main__":
     stats["payload_bytes"] = payload_bytes
     
     stats.update(stats_encode)
-    stats.update(stats_decode)   
-
     stats.update(stats_decode)   
     
     # Get the stego edges.
