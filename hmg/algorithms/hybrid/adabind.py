@@ -298,10 +298,10 @@ class AdaBIND(BIND):
 
         # Start creating new edges.
         if self.ada_policy == "GW2N":
-            return self._gw2dn(g, df_edges_cover)
+            return self._gw2n(g, df_edges_cover)
 
 
-    def _gw2dn(self, g, df_edges_cover):
+    def _gw2n(self, g, df_edges_cover):
         """ Wire two nodes that make the current edge numbers close to
             the target edge numbers based on a greedy approach.
             'GW2N' means a greedy algorithm for wiring two nodes.
