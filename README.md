@@ -92,4 +92,16 @@ These scripts perform the encoding simulation experiments for all datasets of OG
 
 
 ## Citation
-
+    @article{
+        dwlee2025hmg,
+        title = {Hiding secret messages in large-scale graphs},
+        journal = {Expert Systems with Applications},
+        volume = {264},
+        pages = {125777},
+        year = {2025},
+        issn = {0957-4174},
+        doi = {https://doi.org/10.1016/j.eswa.2024.125777},
+        url = {https://www.sciencedirect.com/science/article/pii/S0957417424026447},
+        author = {Daewon Lee},
+        keywords = {Information hiding, Steganography, Watermarking, Graphs, Networks}
+    }
